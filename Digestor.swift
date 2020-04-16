@@ -149,3 +149,50 @@ extension String{
         return digestHex.isEmpty ? nil : digestHex
     }
 }
+
+extension Data{
+    
+    func sha512() -> String?{
+        let digest=UnsafeMutablePointer<UInt8>.allocate(capacity: Int(CC_SHA512_DIGEST_LENGTH))
+        digest.initialize(to: 0)
+        
+        self.withUnsafeBytes { (point) ->Void in
+            CC_SHA512(point.baseAddress!, CC_LONG(point.count), digest)
+        }
+        
+        var digestHex=""//%02x
+        for index in 0 ..< Int(CC_SHA512_DIGEST_LENGTH) {
+            digestHex += String(format: "%02x",digest[index])
+        }
+        
+        return digestHex.isEmpty ? nil : digestHex
+    }
+    
+    func rxsha512() ->Observable<String>{
+        
+        return Observable.create { (observer) -> Disposable in
+
+            let digest=UnsafeMutablePointer<UInt8>.allocate(capacity: Int(CC_SHA512_DIGEST_LENGTH))
+            digest.initialize(to: 0)
+            
+            self.withUnsafeBytes { (point) ->Void in
+                CC_SHA512(point.baseAddress!, CC_LONG(point.count), digest)
+            }
+            
+            var digestHex=""//%02x
+            for index in 0 ..< Int(CC_SHA512_DIGEST_LENGTH) {
+                digestHex += String(format: "%02x",digest[index])
+            }
+            
+            if(digestHex.isEmpty){
+                observer.onError(NSError.init(domain: String.DigestDomain, code: -1, userInfo: nil))
+            }
+            else{
+                observer.onNext(digestHex)
+                observer.onCompleted()
+            }
+            
+            return Disposables.create()
+        }
+    }
+}
